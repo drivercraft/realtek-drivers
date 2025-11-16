@@ -532,7 +532,7 @@ impl Rtl8125 {
 
             // Found a packet! Process it at descriptor idx
             let cur_rx = idx;
-            info!(
+            trace!(
                 "RTL8125: recv() found packet at RX[{}], status=0x{:08x}",
                 cur_rx, rx_status
             );
@@ -569,7 +569,7 @@ impl Rtl8125 {
 
             // Get packet length (minus CRC)
             let len = ((rx_status & 0x1FFF) - 4) as usize;
-            info!("RTL8125: RX packet length: {} bytes", len);
+            trace!("RTL8125: RX packet length: {} bytes", len);
 
             if len > buf.len() {
                 return Err("Buffer too small");
