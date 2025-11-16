@@ -1,0 +1,9 @@
+[package]
+name = "realtek"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+crate_interface = "0.1"
+memory_addr = "0.4"
+log = "0.4"
