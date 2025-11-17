@@ -111,7 +111,7 @@ pub mod register_bits {
 }
 
 /// Configuration constants
-pub const NUM_TX_DESC: usize = 1;
+pub const NUM_TX_DESC: usize = 4;
 pub const NUM_RX_DESC: usize = 4;
 pub const RX_BUF_SIZE: usize = 1536;
 pub const MAX_ETH_FRAME_SIZE: usize = 1536;

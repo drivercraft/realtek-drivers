@@ -619,4 +619,122 @@ impl Rtl8125 {
     pub fn mac_address(&self) -> [u8; 6] {
         self.mac_addr
     }
+
+    /// Send ARP request to resolve IP to MAC address
+    pub fn send_arp_test(&mut self) -> Result<(), &'static str> {
+        const ETH_TYPE_ARP: u16 = 0x0806;
+        const ARP_HTYPE_ETHERNET: u16 = 0x0001;
+        const ARP_PTYPE_IPV4: u16 = 0x0800;
+        const ARP_OPER_REQUEST: u16 = 0x0001;
+        let local_ip = [192, 168, 1, 60];
+        let target_ip = [192, 168, 1, 8];
+        // ARP packet structure:
+        // Ethernet(14) + ARP(28) = 42 bytes
+        let mut packet = [0u8; 42];
+
+        // Ethernet header
+        let broadcast_mac = [0xff, 0xff, 0xff, 0xff, 0xff, 0xff];
+        packet[0..6].copy_from_slice(&broadcast_mac); // Destination MAC: broadcast
+        packet[6..12].copy_from_slice(&self.mac_address()); // Source MAC: our MAC
+        packet[12..14].copy_from_slice(&ETH_TYPE_ARP.to_be_bytes()); // EtherType: ARP
+
+        // ARP header
+        let arp_offset = 14;
+        packet[arp_offset..arp_offset + 2].copy_from_slice(&ARP_HTYPE_ETHERNET.to_be_bytes()); // Hardware type: Ethernet
+        packet[arp_offset + 2..arp_offset + 4].copy_from_slice(&ARP_PTYPE_IPV4.to_be_bytes()); // Protocol type: IPv4
+        packet[arp_offset + 4] = 6; // Hardware address length: 6 (MAC)
+        packet[arp_offset + 5] = 4; // Protocol address length: 4 (IPv4)
+        packet[arp_offset + 6..arp_offset + 8].copy_from_slice(&ARP_OPER_REQUEST.to_be_bytes()); // Operation: Request
+        packet[arp_offset + 8..arp_offset + 14].copy_from_slice(&self.mac_address()); // Sender MAC address
+        packet[arp_offset + 14..arp_offset + 18].copy_from_slice(&local_ip); // Sender IP address
+        packet[arp_offset + 18..arp_offset + 24]
+            .copy_from_slice(&[0xff, 0xff, 0xff, 0xff, 0xff, 0xff]); // Target MAC address (unknown, set to 0)
+        packet[arp_offset + 24..arp_offset + 28].copy_from_slice(&target_ip); // Target IP address
+
+        info!(
+            "NetStack: Sending ARP request for {}.{}.{}.{}",
+            target_ip[0], target_ip[1], target_ip[2], target_ip[3]
+        );
+
+        // Send packet
+        self.send(&packet)?;
+
+        for _ in 0..1000 {
+            self.check_ping_reply()?;
+            self.udelay(1000);
+        }
+
+        Ok(())
+    }
+
+        /// Check for ping reply
+    pub fn check_ping_reply(&mut self) -> Result<bool, &'static str> {
+        let mut buf = [0u8; 1536];
+
+        match self.recv(&mut buf) {
+            Ok(len) => {
+                info!("NetStack: Received packet of length {}", len);
+
+                // Check EtherType first
+                if len < 14 {
+                    return Ok(false);
+                }
+
+                let eth_type = u16::from_be_bytes([buf[12], buf[13]]);
+
+                // Check if it's an ICMP Echo Reply from our target
+                if len < 14 + 20 + 8 {
+                    warn!("NetStack: Packet too short ({} < 42)", len);
+                    return Ok(false);
+                }
+
+                info!("NetStack: EtherType: 0x{:04x}", eth_type);
+
+                let ip_offset = 14;
+                let protocol = buf[ip_offset + 9];
+                info!("NetStack: IP Protocol: {}", protocol);
+
+                let src_ip = [
+                    buf[ip_offset + 12],
+                    buf[ip_offset + 13],
+                    buf[ip_offset + 14],
+                    buf[ip_offset + 15],
+                ];
+                info!(
+                    "NetStack: Source IP: {}.{}.{}.{}",
+                    src_ip[0], src_ip[1], src_ip[2], src_ip[3]
+                );
+
+                let dst_ip = [
+                    buf[ip_offset + 16],
+                    buf[ip_offset + 17],
+                    buf[ip_offset + 18],
+                    buf[ip_offset + 19],
+                ];
+                info!(
+                    "NetStack: Dest IP: {}.{}.{}.{}",
+                    dst_ip[0], dst_ip[1], dst_ip[2], dst_ip[3]
+                );
+
+                let icmp_offset = 14 + 20;
+                let icmp_type = buf[icmp_offset];
+                let icmp_code = buf[icmp_offset + 1];
+                let icmp_seq = u16::from_be_bytes([buf[icmp_offset + 6], buf[icmp_offset + 7]]);
+
+                info!(
+                    "NetStack: ICMP Type: {}, Code: {}, Seq: {}",
+                    icmp_type, icmp_code, icmp_seq
+                );
+
+                Ok(true)
+            }
+            Err(_) => Ok(false), // No packet available
+        }
+    }
+}
+
+impl Drop for Rtl8125 {
+    fn drop(&mut self) {
+        info!("RTL8125: Driver instance dropped");
+    }
 }

@@ -24,6 +24,10 @@ pub trait KernelFunc {
     /// Busy-wait for the specified duration
     fn busy_wait(duration: core::time::Duration);
 
+    fn dma_alloc_coherent(pages: usize) -> (usize, usize);
+
+    fn dma_free_coherent(vaddr: usize, pages: usize);
+
     /// Clean (write-back) data cache range
     ///
     /// Ensures CPU-written data is flushed to memory so hardware DMA can see it.
@@ -81,5 +85,13 @@ impl KernelFunc for UseKernelFunc {
     #[doc = " Must be called with valid memory range."]
     fn invalidate_dcache_range(addr: usize, size: usize) {
         crate_interface::call_interface!(KernelFunc::invalidate_dcache_range(addr, size))
+    }
+    
+    fn dma_alloc_coherent(pages:usize) -> (usize,usize) {
+        crate_interface::call_interface!(KernelFunc::dma_alloc_coherent(pages))
+    }
+    
+    fn dma_free_coherent(vaddr:usize,pages:usize) {
+        crate_interface::call_interface!(KernelFunc::dma_free_coherent(vaddr, pages))
     }
 }
