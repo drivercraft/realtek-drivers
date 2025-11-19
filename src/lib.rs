@@ -1,10 +1,11 @@
 #![no_std]
 #![cfg_attr(doc, feature(doc_auto_cfg))]
 
-use memory_addr::{PhysAddr, VirtAddr};
+pub mod constants;
+pub mod types;
+pub mod rtl8169;
 
-pub mod regs;
-pub mod rtl8125;
+use memory_addr::{PhysAddr, VirtAddr};
 
 #[macro_use]
 extern crate log;
