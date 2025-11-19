@@ -42,6 +42,10 @@ impl Rtl8169 {
         }
     }
 
+    pub fn mac_address(&self) -> [u8; 6] {
+        self.eth_addr
+    }
+
     /// Read 8-bit register
     #[inline]
     fn read8(&self, reg: usize) -> u8 {

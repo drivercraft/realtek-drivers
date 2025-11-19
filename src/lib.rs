@@ -48,7 +48,7 @@ pub trait KernelFunc {
     fn invalidate_dcache_range(addr: usize, size: usize);
 }
 
-pub(crate) struct UseKernelFunc;
+pub struct UseKernelFunc;
 
 impl KernelFunc for UseKernelFunc {
     #[doc = " Convert virtual address to physical address"]
