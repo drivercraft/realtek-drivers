@@ -383,12 +383,18 @@ impl Rtl8169 {
 
     #[inline]
     fn rtl_inval_tx_desc(&self, desc: *mut crate::types::TxDesc) {
-        UseKernelFunc::invalidate_dcache_range(desc as usize, core::mem::size_of::<crate::types::TxDesc>());
+        UseKernelFunc::invalidate_dcache_range(
+            desc as usize,
+            core::mem::size_of::<crate::types::TxDesc>(),
+        );
     }
 
     #[inline]
     fn rtl_flush_tx_desc(&self, desc: *mut crate::types::TxDesc) {
-        UseKernelFunc::clean_dcache_range(desc as usize, core::mem::size_of::<crate::types::TxDesc>());
+        UseKernelFunc::clean_dcache_range(
+            desc as usize,
+            core::mem::size_of::<crate::types::TxDesc>(),
+        );
     }
 
     #[inline]
